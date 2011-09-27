@@ -136,7 +136,7 @@
 		self.tilesets = [NSMutableArray arrayWithCapacity:4];
 		self.layers = [NSMutableArray arrayWithCapacity:4];
 		self.filename = tmxFile;
-		self.objectGroups = [NSMutableArray arrayWithCapacity:4];
+		self.objectGroups = [NSMutableArray arrayWithCapacity:5];
 		self.properties = [NSMutableDictionary dictionaryWithCapacity:5];
 		self.tileProperties = [NSMutableDictionary dictionaryWithCapacity:5];
 	
@@ -314,7 +314,7 @@
 		
 		// The value for "type" was blank or not a valid class name
 		// Create an instance of TMXObjectInfo to store the object and its properties
-		NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:5];
+		NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:6];
 		
 		// Set the name of the object to the value for "name"
 		[dict setValue:[attributeDict valueForKey:@"name"] forKey:@"name"];
@@ -329,6 +329,7 @@
 		[dict setValue:[NSNumber numberWithInt:y] forKey:@"y"];
 		[dict setValue:[attributeDict valueForKey:@"width"] forKey:@"width"];
 		[dict setValue:[attributeDict valueForKey:@"height"] forKey:@"height"];
+        [dict setValue:[attributeDict valueForKey:@"gid"] forKey:@"gid"];
 		
 		// Add the object to the objectGroup
 		[[objectGroup objects] addObject:dict];

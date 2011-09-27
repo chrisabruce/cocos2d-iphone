@@ -43,6 +43,7 @@
 @interface CCTMXTiledMap (Private)
 -(id) parseLayer:(CCTMXLayerInfo*)layer map:(CCTMXMapInfo*)mapInfo;
 -(CCTMXTilesetInfo*) tilesetForLayer:(CCTMXLayerInfo*)layerInfo map:(CCTMXMapInfo*)mapInfo;
+-(CCNode*) parseObjectGroup:(CCTMXObjectGroup*)objectGroup map:(CCTMXMapInfo*)mapInfo;
 @end
 
 @implementation CCTMXTiledMap
@@ -93,7 +94,22 @@
 	
 				idx++;
 			}			
-		}		
+		}
+        
+        for (CCTMXObjectGroup *objectGroup in objectGroups_) {
+            CCNode *node = [self parseObjectGroup:objectGroup map:mapInfo];
+            [self addChild:node z:idx tag:idx];
+            idx++;
+        }
+		
+//        for (itr = m_pObjectGroups->begin(); itr !=m_pObjectGroups->end();++itr)
+//        {
+//            objectgroup = *itr;
+//            
+//            CCNode *child = parseObject(objectgroup,mapInfo);
+//            addChild((CCNode*)child,idx,idx);
+//            m_pTMXLayers->setObject((CCTMXLayer*)child,objectgroup->getGroupName());
+//        }
 	}
 
 	return self;
@@ -156,6 +172,52 @@
 	CCLOG(@"cocos2d: Warning: TMX Layer '%@' has no tiles", layerInfo.name);
 	return nil;
 }
+
+-(CCNode*) parseObjectGroup:(CCTMXObjectGroup*)objectGroup map:(CCTMXMapInfo*)mapInfo
+{
+    CFByteOrder o = CFByteOrderGetCurrent();
+    
+    CCNode *layer = [CCNode node];
+    
+    NSMutableDictionary *tilesetDict = [NSMutableDictionary dictionaryWithCapacity:[mapInfo.tilesets count]];
+    CCTMXTilesetInfo *tileset;
+    for( tileset in mapInfo.tilesets ) {
+        [tilesetDict setObject:tileset forKey:[NSNumber numberWithInt:tileset.firstGid]];
+    }
+    
+    CCSprite *objectSprite;
+    CCTexture2D *texture;
+    for( id object in objectGroup.objects ) {
+        unsigned int gid = [[object valueForKey:@"gid"] intValue];
+        
+        // gid are stored in little endian.
+        // if host is big endian, then swap
+        if( o == CFByteOrderBigEndian )
+            gid = CFSwapInt32( gid );
+        
+        // XXX: gid == 0 --> empty tile
+        if( gid != 0 ) {
+            tileset = [tilesetDict objectForKey:[NSNumber numberWithInt:gid]];
+            if( tileset != nil ) {
+                texture = [[CCTextureCache sharedTextureCache] addImage:tileset.sourceImage];
+                tileset.imageSize = texture.contentSize;
+                
+                int x = [[object valueForKey:@"x"] intValue];
+                int y = [[object valueForKey:@"y"] intValue];
+                CGRect rect = [tileset rectForGID:gid];
+                
+                objectSprite = [[CCSprite alloc] initWithTexture:texture rect:rect];
+                objectSprite.anchorPoint = ccp(0, 0);
+                objectSprite.position = ccp(x, y);
+                
+                [layer addChild:objectSprite];
+                [objectSprite release];
+            }
+        }
+    }
+    return layer; 
+}
+
 
 
 // public
